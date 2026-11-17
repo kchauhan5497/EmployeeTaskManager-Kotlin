@@ -1,0 +1,12 @@
+---
+description: Day 3 planning documentation constraints and project status
+alwaysApply: true
+---
+
+# Day 3 planning
+
+- Treat Day 3 application changes as planned, not implemented.
+- Preserve Coding Status **NOT STARTED** and Trainer Approval **PENDING** unless the user explicitly changes those statuses.
+- The planned architecture is TaskListScreen → TaskViewModel → TaskRepository → in-memory task storage. The repository owns the task MutableStateFlow; the ViewModel exposes UI state.
+- Keep planning documentation consistent across `docs/REQUIREMENTS.md`, `docs/DEVELOPMENT_PLAN.md`, `docs/ARCHITECTURE.md`, and `docs/diagrams/architecture.mmd`.
+- Never report a build, test, or parser result that was not actually obtained.

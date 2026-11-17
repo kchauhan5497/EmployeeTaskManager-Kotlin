@@ -34,8 +34,15 @@ The **Employee Task Manager** mobile application simplifies workflow coordinatio
 
 ## Documentation
 
+- [Day 3 Requirements](docs/REQUIREMENTS.md)
+- [Day 3 Development Plan](docs/DEVELOPMENT_PLAN.md)
+- [Day 3 Architecture](docs/ARCHITECTURE.md)
+- [Architecture Mermaid source](docs/diagrams/architecture.mmd)
+- [Current project status](docs/CURRENT_STATUS.md)
+- [Architecture decisions](docs/DECISIONS.md)
+- [Debugging log](docs/DEBUGGING_LOG.md)
 - **Code Walkthrough & Debugging Guide:** [CODE_WALKTHROUGH.md](CODE_WALKTHROUGH.md)  
-  Contains detailed technical documentation on `MainActivity`, Android Activity lifecycle callbacks, Logcat execution tracking, runtime breakpoint workflows, and the Day 2 Debugging Lab crash report.
+  Contains technical documentation on `MainActivity`, Activity lifecycle callbacks, Logcat, runtime breakpoints, and the Day 2 debugging exercise.
 
 ---
 
@@ -57,6 +64,7 @@ The **Employee Task Manager** mobile application simplifies workflow coordinatio
 ```text
 EmployeeTaskManager/
 │
+├── .cursor/rules/day3-planning.mdc
 ├── app/
 │   └── src/
 │       └── main/
@@ -68,8 +76,16 @@ EmployeeTaskManager/
 │           │       └── Type.kt
 │           ├── res/
 │           └── AndroidManifest.xml
-│
+├── docs/
+│   ├── REQUIREMENTS.md
+│   ├── DEVELOPMENT_PLAN.md
+│   ├── ARCHITECTURE.md
+│   ├── CURRENT_STATUS.md
+│   ├── DECISIONS.md
+│   ├── DEBUGGING_LOG.md
+│   └── diagrams/architecture.mmd
 ├── gradle/
+├── AGENTS.md
 ├── build.gradle.kts
 ├── settings.gradle.kts
 ├── CODE_WALKTHROUGH.md
@@ -113,11 +129,13 @@ EmployeeTaskManager/
   - Live breakpoint debugging during runtime and stack frame inspection.
   - Home screen button click event flow and Toast notification implementation.
   - Technical walkthrough document (`CODE_WALKTHROUGH.md`).
-- [ ] **Day 3: UI Development & Screen Navigation** *(Upcoming)*
-  - Multi-screen navigation setup with Jetpack Compose Navigation.
-  - Task list and task detail screens.
+- [x] **Day 3: Plan Before Coding** *(Planning documents prepared; trainer approval pending)*
+  - Requirements, user stories, edge cases, and acceptance criteria documented.
+  - MVVM/repository architecture, proposed files, ordered implementation steps, and test strategy documented.
+  - Codex review findings and risks recorded in the revised plan.
+  - **Coding Status: NOT STARTED. Trainer Approval: PENDING.**
 
-*This project is under active development.*
+Day 3 implementation has not started. Future task management scope is defined by the planning documents; multi-screen navigation is not currently in scope.
 
 ---
 

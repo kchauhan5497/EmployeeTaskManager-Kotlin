@@ -1,0 +1,11 @@
+flowchart LR
+    UI["TaskListScreen<br/>Compose UI: renders tasks and inputs; collects UI state"]
+    VM["TaskViewModel<br/>State holder: validates input, handles user actions, exposes TaskListUiState"]
+    REPO["TaskRepository<br/>Data operations: adds tasks, marks completion; owns task data source"]
+    STORE["In-Memory Storage<br/>MutableStateFlow&lt;List&lt;Task&gt;&gt;: holds and emits the task list"]
+
+    UI -->|"User actions: add task or mark complete"| VM
+    VM -->|"Validated task operations"| REPO
+    REPO -->|"Writes task-list updates"| STORE
+    STORE -->|"Task list emitted by repository MutableStateFlow"| VM
+    VM -->|"TaskListUiState via StateFlow"| UI
