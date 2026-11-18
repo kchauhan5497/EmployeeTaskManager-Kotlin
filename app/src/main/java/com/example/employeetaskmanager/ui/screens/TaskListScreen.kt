@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -43,117 +43,123 @@ fun TaskListScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    Column(
+    LazyColumn(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Day 2 Toast Action Trigger Button (Preserving Day 2 functionality)
-        OutlinedButton(
-            onClick = { onTaskDetailClick(context) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(text = "Task Detail Button Click")
-        }
+        // Keep the form and summary in the same scroll container as the task cards.
+        // This lets the whole screen move in landscape without nesting lazy lists.
+        item {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // Day 2 Toast Action Trigger Button (Preserving Day 2 functionality)
+                OutlinedButton(
+                    onClick = { onTaskDetailClick(context) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = "Task Detail Button Click")
+                }
 
-        Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-        // Input Form Section
-        Text(
-            text = "Add New Task",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = uiState.titleInput,
-            onValueChange = { viewModel.onTitleInputChanged(it) },
-            label = { Text("Task Title *") },
-            isError = uiState.errorMessage != null,
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        if (uiState.errorMessage != null) {
-            Text(
-                text = uiState.errorMessage!!,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(start = 4.dp, top = 4.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = uiState.descriptionInput,
-            onValueChange = { viewModel.onDescriptionInputChanged(it) },
-            label = { Text("Task Description (Optional)") },
-            minLines = 2,
-            maxLines = 4,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Button(
-            onClick = { viewModel.addTask() },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(text = "Add Task")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        TaskSummaryRow(
-            totalTasks = uiState.totalTasks,
-            completedTasks = uiState.completedTasks,
-            pendingTasks = uiState.pendingTasks
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Task List Section
-        Text(
-            text = "Task List",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        if (uiState.tasks.isEmpty()) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 32.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = MaterialTheme.shapes.medium
-            ) {
+                // Input Form Section
                 Text(
-                    text = "No tasks available. Add a new task to get started!",
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(16.dp)
+                    text = "Add New Task",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
-            }
-        } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(
-                    items = uiState.tasks,
-                    key = { task -> task.id }
-                ) { task ->
-                    TaskItemCard(
-                        task = task,
-                        onMarkComplete = { viewModel.markTaskComplete(task.id) }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = uiState.titleInput,
+                    onValueChange = { viewModel.onTitleInputChanged(it) },
+                    label = { Text("Task Title *") },
+                    isError = uiState.errorMessage != null,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                if (uiState.errorMessage != null) {
+                    Text(
+                        text = uiState.errorMessage!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
                     )
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = uiState.descriptionInput,
+                    onValueChange = { viewModel.onDescriptionInputChanged(it) },
+                    label = { Text("Task Description (Optional)") },
+                    minLines = 2,
+                    maxLines = 4,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = { viewModel.addTask() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = "Add Task")
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                TaskSummaryRow(
+                    totalTasks = uiState.totalTasks,
+                    completedTasks = uiState.completedTasks,
+                    pendingTasks = uiState.pendingTasks
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Task List Section
+                Text(
+                    text = "Task List",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (uiState.tasks.isEmpty()) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Text(
+                            text = "No tasks available. Add a new task to get started!",
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        if (uiState.tasks.isNotEmpty()) {
+            itemsIndexed(
+                items = uiState.tasks,
+                key = { _, task -> task.id }
+            ) { index, task ->
+                if (index > 0) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                TaskItemCard(
+                    task = task,
+                    onMarkComplete = { viewModel.markTaskComplete(task.id) }
+                )
             }
         }
     }
