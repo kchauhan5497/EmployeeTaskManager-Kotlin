@@ -1,10 +1,11 @@
 # Employee Task Manager
 
-An Android application developed using **Kotlin, Android Studio, and Jetpack Compose** to streamline task assignment, status updates, and workflow management between administrators and employees.
+An Android application developed using **Kotlin, Android Studio, Jetpack Compose, and Room Database** to streamline task assignment, status updates, and workflow management between administrators and employees.
 
 ![Kotlin](https://img.shields.io/badge/Language-Kotlin-purple?style=flat-square&logo=kotlin)
 ![Android SDK](https://img.shields.io/badge/Platform-Android-green?style=flat-square&logo=android)
 ![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-blue?style=flat-square&logo=jetpackcompose)
+![Room](https://img.shields.io/badge/Database-Room-4285F4?style=flat-square&logo=android)
 ![Gradle](https://img.shields.io/badge/Build-Gradle%20Kotlin%20DSL-02569B?style=flat-square&logo=gradle)
 
 ---
@@ -12,6 +13,7 @@ An Android application developed using **Kotlin, Android Studio, and Jetpack Com
 ## Table of Contents
 
 - [Project Overview](#project-overview)
+- [Architecture](#architecture)
 - [Documentation](#documentation)
 - [Technologies & Tools](#technologies--tools)
 - [Project Directory Structure](#project-directory-structure)
@@ -28,7 +30,18 @@ An Android application developed using **Kotlin, Android Studio, and Jetpack Com
 
 ## Project Overview
 
-The **Employee Task Manager** mobile application simplifies workflow coordination between management and team members. Built using modern Android architecture, declarative UI with Jetpack Compose, and Kotlin best practices, this application provides an intuitive platform for assigning tasks, tracking completion progress, and organizing employee task histories.
+The **Employee Task Manager** mobile application simplifies workflow coordination between management and team members. Built using modern Android MVVM architecture, declarative UI with Jetpack Compose, local Room database persistence, and Kotlin best practices, this application provides an intuitive platform for creating tasks, tracking completion progress, and organizing employee task histories.
+
+---
+
+## Architecture
+
+The app follows a modern Android MVVM (Model-View-ViewModel) architecture backed by a local Room database (`employee_tasks.db`):
+
+- **View (`TaskListScreen.kt`):** Declarative Jetpack Compose UI with screen-level scrolling via a single `LazyColumn`, exposing input fields, summary counters, and task cards.
+- **ViewModel (`TaskViewModel.kt`):** Activity-scoped state holder managing `TaskListUiState`, validating task inputs (non-blank titles), and delegating actions to the repository.
+- **Repository (`TaskRepository.kt`):** Single source of truth mapping domain `Task` models to `TaskEntity` objects and managing operations via `TaskDao`.
+- **Database (`TaskDatabase.kt` & `TaskDao.kt`):** Room SQLite database providing persistent storage and reactive data streams (`Flow<List<TaskEntity>>`).
 
 ---
 
@@ -36,11 +49,13 @@ The **Employee Task Manager** mobile application simplifies workflow coordinatio
 
 - [Day 3 Requirements](docs/REQUIREMENTS.md)
 - [Day 3 Development Plan](docs/DEVELOPMENT_PLAN.md)
-- [Day 3 Architecture](docs/ARCHITECTURE.md)
+- [As-Built Architecture (Room)](docs/ARCHITECTURE.md)
 - [Architecture Mermaid source](docs/diagrams/architecture.mmd)
-- [Current project status](docs/CURRENT_STATUS.md)
-- [Architecture decisions](docs/DECISIONS.md)
-- [Debugging log](docs/DEBUGGING_LOG.md)
+- [Architecture Decisions](docs/DECISIONS.md)
+- [Docs Project Status](docs/CURRENT_STATUS.md)
+- [Root Project Status](CURRENT_STATUS.md)
+- [Docs Debugging Log](docs/DEBUGGING_LOG.md)
+- [Root Debugging Log](DEBUGGING_LOG.md)
 - **Code Walkthrough & Debugging Guide:** [CODE_WALKTHROUGH.md](CODE_WALKTHROUGH.md)  
   Contains technical documentation on `MainActivity`, Activity lifecycle callbacks, Logcat, runtime breakpoints, and the Day 2 debugging exercise.
 
@@ -53,6 +68,8 @@ The **Employee Task Manager** mobile application simplifies workflow coordinatio
 | **Language** | Kotlin |
 | **IDE** | Android Studio |
 | **UI Framework** | Jetpack Compose (Material 3) |
+| **Architecture Pattern** | MVVM (Model-View-ViewModel) |
+| **Database / Persistence** | Room Persistence Library (`employee_tasks.db`) |
 | **Core Components** | Android Activity Lifecycle (`ComponentActivity`), `android.util.Log`, `Toast` |
 | **Build System** | Gradle (Kotlin DSL) |
 | **Version Control** | Git & GitHub |
@@ -64,18 +81,29 @@ The **Employee Task Manager** mobile application simplifies workflow coordinatio
 ```text
 EmployeeTaskManager/
 │
-├── .cursor/rules/day3-planning.mdc
 ├── app/
 │   └── src/
-│       └── main/
-│           ├── java/com/example/employeetaskmanager/
-│           │   ├── MainActivity.kt
-│           │   └── ui/theme/
-│           │       ├── Color.kt
-│           │       ├── Theme.kt
-│           │       └── Type.kt
-│           ├── res/
-│           └── AndroidManifest.xml
+│       ├── main/
+│       │   ├── java/com/example/employeetaskmanager/
+│       │   │   ├── MainActivity.kt
+│       │   │   ├── data/
+│       │   │   │   ├── db/
+│       │   │   │   │   ├── TaskDao.kt
+│       │   │   │   │   └── TaskDatabase.kt
+│       │   │   │   ├── model/
+│       │   │   │   │   └── Task.kt
+│       │   │   │   └── repository/
+│       │   │   │       └── TaskRepository.kt
+│       │   │   └── ui/
+│       │   │       ├── screens/
+│       │   │       │   └── TaskListScreen.kt
+│       │   │       ├── theme/
+│       │   │       └── viewmodel/
+│       │   │           └── TaskViewModel.kt
+│       │   └── AndroidManifest.xml
+│       └── androidTest/
+│           └── java/com/example/employeetaskmanager/
+│               └── TaskDatabasePersistenceTest.kt
 ├── docs/
 │   ├── REQUIREMENTS.md
 │   ├── DEVELOPMENT_PLAN.md
@@ -84,11 +112,12 @@ EmployeeTaskManager/
 │   ├── DECISIONS.md
 │   ├── DEBUGGING_LOG.md
 │   └── diagrams/architecture.mmd
-├── gradle/
 ├── AGENTS.md
 ├── build.gradle.kts
 ├── settings.gradle.kts
 ├── CODE_WALKTHROUGH.md
+├── CURRENT_STATUS.md
+├── DEBUGGING_LOG.md
 └── README.md
 ```
 
@@ -131,15 +160,20 @@ EmployeeTaskManager/
   - Technical walkthrough document (`CODE_WALKTHROUGH.md`).
 - [x] **Day 3: Plan Before Coding** — COMPLETED
   - Requirements, user stories, edge cases, and acceptance criteria documented.
-  - MVVM/repository architecture, proposed files, ordered implementation steps, and test strategy documented.
-  - Codex review findings and risks recorded in the revised plan.
+  - Architecture planning documents created (`docs/REQUIREMENTS.md`, `docs/DEVELOPMENT_PLAN.md`, `docs/ARCHITECTURE.md`).
 - [x] **Day 4: Build the First Feature, Debug and Deliver** — COMPLETED
-  - Implemented `Task` model, `TaskRepository`, `TaskViewModel`, and `TaskListScreen`.
-  - Integrated Activity-scoped `TaskViewModel` in `MainActivity.kt`.
-  - Resolved Bug Challenge A, Bug Challenge B, and Codex review fixes (ViewModel repository observation & Activity-scoped configuration persistence).
-  - 13 passing unit tests (`TaskRepositoryTest`, `TaskViewModelTest`, `ExampleUnitTest`).
-  - Successful debug APK build (`./gradlew app:assembleDebug`).
-  - Pending manual emulator UI regression verification & GitHub PR submission.
+  - Implemented MVVM architecture with Room database persistence (`Task`, `TaskEntity`, `TaskDao`, `TaskDatabase`, `TaskRepository`, `TaskViewModel`, and `TaskListScreen`).
+  - Verified core features:
+    - **Add Task:** Required non-blank title validation, optional description, sanitized input handling.
+    - **View Task List:** Scrollable list displaying task items, status counters (Total, Pending, Completed).
+    - **Mark Complete:** One-way, idempotent status transition with visual badge updates ("Pending" $\rightarrow$ "Completed").
+    - **Day 2 Action:** Integrated Toast handler button (`"Task Detail Button Click"`).
+  - Build and testing verification:
+    - Debug APK build passed (`./gradlew app:assembleDebug`).
+    - 13 unit tests passed (`./gradlew app:testDebugUnitTest --rerun-tasks`).
+    - Instrumented Room database-reopen persistence test passed (`./gradlew app:connectedDebugAndroidTest`).
+    - UI scrolling verified on emulator in both portrait and landscape orientations.
+  - Note: End-to-end application behavior after full process restart remains untested.
 
 ---
 
@@ -264,9 +298,13 @@ User Taps "Task Detail Button Click"
 
 ## Debugging & Verification
 
-- **Logcat Output Verification:** Confirmed that state transition logs and button click logs appear under tag `EmployeeApp`.
-- **Live Breakpoint Execution:** Performed runtime breakpoint debugging in Android Studio on `onStart()`, `onResume()`, and `onTaskDetailButtonClicked()`. Inspected call stack frames and `savedInstanceState` variables.
-- **Build Verification:** Verified clean compilation via Gradle (`app:assembleDebug`).
+- **Debug Build Verification:** `./gradlew app:assembleDebug` completed successfully (`BUILD SUCCESSFUL`).
+- **Unit Testing:** `./gradlew app:testDebugUnitTest --rerun-tasks` passed with 13 unit tests verified (5 in `TaskRepositoryTest`, 7 in `TaskViewModelTest`, 1 in `ExampleUnitTest`).
+- **Instrumented Database Persistence:** `./gradlew app:connectedDebugAndroidTest` passed on the connected emulator. `TaskDatabasePersistenceTest` verified that task insertion and task completion status persist across closing and reopening a Room database instance.
+- **UI & Orientation Verification:** Evaluated `TaskListScreen` on emulator in both portrait and landscape orientations. Confirmed single screen-level `LazyColumn` scrolling allows access to Toast action button, form inputs, task summary header, and task item cards.
+- **Logcat Output Verification:** Confirmed Activity lifecycle state transitions and button click events under tag `EmployeeApp`.
+- **Live Breakpoint Execution:** Performed runtime breakpoint debugging on `onStart()`, `onResume()`, and `onTaskDetailButtonClicked()`.
+- **Unverified Scope:** End-to-end application behavior after full process restart (process death / app relaunch) has not been tested.
 
 ---
 
@@ -275,8 +313,8 @@ User Taps "Task Detail Button Click"
 - [ ] **Employee Login & Registration:** Role-based authentication system.
 - [ ] **Admin Dashboard:** Administrative panel for managing employees and tasks.
 - [ ] **Task Assignment:** Ability for admins to assign tasks with priorities and deadlines.
-- [ ] **Task Progress Tracking:** Employee task status updates (Pending, In Progress, Completed).
-- [ ] **Employee Task History:** Comprehensive history and task performance analytics.
+- [ ] **Task Progress Tracking:** Enhanced task lifecycle analytics.
+- [ ] **Employee Task History:** Comprehensive history and task performance reporting.
 
 ---
 
