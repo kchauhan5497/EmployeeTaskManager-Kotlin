@@ -6,6 +6,10 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.lifecycle.ViewModelProvider
+import com.example.employeetaskmanager.data.local.TaskDatabase
+import com.example.employeetaskmanager.data.repository.TaskRepository
+import com.example.employeetaskmanager.ui.viewmodel.TaskViewModelFactory
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -21,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.employeetaskmanager.ui.screens.TaskListScreen
 import com.example.employeetaskmanager.ui.theme.EmployeeTaskManagerTheme
 
 class MainActivity : ComponentActivity() {
@@ -28,11 +33,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         android.util.Log.d("EmployeeApp", "MainActivity started")
         enableEdgeToEdge()
+        val repository = TaskRepository(TaskDatabase.getInstance(application).taskDao())
+        val taskViewModel = ViewModelProvider(
+            this,
+            TaskViewModelFactory(repository)
+        )[com.example.employeetaskmanager.ui.viewmodel.TaskViewModel::class.java]
         setContent {
             EmployeeTaskManagerTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
+                    TaskListScreen(
+                        viewModel = taskViewModel,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }

@@ -129,13 +129,17 @@ EmployeeTaskManager/
   - Live breakpoint debugging during runtime and stack frame inspection.
   - Home screen button click event flow and Toast notification implementation.
   - Technical walkthrough document (`CODE_WALKTHROUGH.md`).
-- [x] **Day 3: Plan Before Coding** *(Planning documents prepared; trainer approval pending)*
+- [x] **Day 3: Plan Before Coding** — COMPLETED
   - Requirements, user stories, edge cases, and acceptance criteria documented.
   - MVVM/repository architecture, proposed files, ordered implementation steps, and test strategy documented.
   - Codex review findings and risks recorded in the revised plan.
-  - **Coding Status: NOT STARTED. Trainer Approval: PENDING.**
-
-Day 3 implementation has not started. Future task management scope is defined by the planning documents; multi-screen navigation is not currently in scope.
+- [x] **Day 4: Build the First Feature, Debug and Deliver** — COMPLETED
+  - Implemented `Task` model, `TaskRepository`, `TaskViewModel`, and `TaskListScreen`.
+  - Integrated Activity-scoped `TaskViewModel` in `MainActivity.kt`.
+  - Resolved Bug Challenge A, Bug Challenge B, and Codex review fixes (ViewModel repository observation & Activity-scoped configuration persistence).
+  - 13 passing unit tests (`TaskRepositoryTest`, `TaskViewModelTest`, `ExampleUnitTest`).
+  - Successful debug APK build (`./gradlew app:assembleDebug`).
+  - Pending manual emulator UI regression verification & GitHub PR submission.
 
 ---
 
