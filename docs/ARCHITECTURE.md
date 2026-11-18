@@ -1,183 +1,97 @@
-# Employee Task Manager - Architecture Documentation
+# Employee Task Manager — As-Built Architecture
 
-**Document Version:** 1.1 (Diagram Aligned)  
-**Phase:** Day 3 Architecture & Design Documentation  
-**Project:** `EmployeeTaskManager-Kotlin`  
+**Document version:** 2.0
+**Updated:** 2026-11-18
+**Scope:** Current Day 4 implementation
 
----
+This document describes the architecture present in the application source. The Day 3 planning documents describe the earlier in-memory proposal; the current application implementation uses Room.
 
-## 1. Architecture Overview
+## Architecture overview
 
-The Employee Task Manager application follows a beginner-friendly MVVM (Model-View-ViewModel) architectural pattern designed with clean separation of concerns, testability, and modern Jetpack Compose standards.
-
-### Architecture Diagram
-
-Mermaid source: [`docs/diagrams/architecture.mmd`](diagrams/architecture.mmd).
+The app follows a single-Activity Compose UI with a ViewModel, repository, DAO, and Room database:
 
 ```mermaid
 flowchart LR
-    UI["TaskListScreen<br/>Compose UI: renders tasks and inputs; collects UI state"]
-    VM["TaskViewModel<br/>State holder: validates input, handles user actions, exposes TaskListUiState"]
-    REPO["TaskRepository<br/>Data operations: adds tasks, marks completion; owns task data source"]
-    STORE["In-Memory Storage<br/>MutableStateFlow&lt;List&lt;Task&gt;&gt;: holds and emits the task list"]
-
-    UI -->|"User actions: add task or mark complete"| VM
-    VM -->|"Validated task operations"| REPO
-    REPO -->|"Writes task-list updates"| STORE
-    STORE -->|"Task list emitted by repository MutableStateFlow"| VM
-    VM -->|"TaskListUiState via StateFlow"| UI
+    UI["TaskListScreen<br/>Single screen-level LazyColumn"]
+    VM["TaskViewModel<br/>TaskListUiState and UI actions"]
+    REPO["TaskRepository<br/>Maps Task and TaskEntity"]
+    DAO["TaskDao<br/>Room queries and Flow"]
+    DB["TaskDatabase<br/>employee_tasks.db"]
+    UI -->|"User actions"| VM
+    VM -->|"Add or complete task"| REPO
+    REPO -->|"Insert or update"| DAO
+    DAO -->|"Room Flow<List<TaskEntity>>"| REPO
+    REPO -->|"Flow<List<Task>>"| VM
+    VM -->|"StateFlow<TaskListUiState>"| UI
+    DAO --> DB
 ```
 
----
+## Components
 
-## 2. MVVM Architecture
+### Activity and dependency setup
 
-The application separates concerns across three core MVVM components:
+`MainActivity` obtains the application-scoped `TaskDatabase` singleton, creates a `TaskRepository` from its `TaskDao`, and supplies the repository through `TaskViewModelFactory` to an Activity-scoped `TaskViewModel`. It hosts `TaskListScreen` inside the app theme and `Scaffold`.
 
-### Model
-- Represents core task information (`Task.kt`).
-- Includes a unique task ID (`id: String = UUID.randomUUID().toString()`), required title (`title: String`), optional description (`description: String = ""`), and completion status (`isCompleted: Boolean = false`).
+The Activity lifecycle log calls and Day 2 Toast handlers remain in `MainActivity.kt`.
 
-### View
-- Implemented using Jetpack Compose and Material 3 principles (`TaskListScreen.kt`).
-- Displays the scrollable task list, input fields, status indicators, empty state message, and inline validation error feedback.
-- Captures user interactions (entering text, tapping "Add Task", marking complete, and triggering Day 2 Toast actions) and delegates events to the ViewModel.
+### UI — `TaskListScreen.kt`
 
-### ViewModel
-- Extends `androidx.lifecycle.ViewModel` (`TaskViewModel.kt`).
-- Manages and exposes UI state using `StateFlow<TaskListUiState>`.
-- Handles task-related actions (adding tasks, marking tasks complete).
-- Performs blank-title validation (ensuring titles are non-empty and not whitespace-only after `.trim()`).
-- Exposes validation error messages through `TaskListUiState` (`errorMessage: String?`).
-- Communicates directly with `TaskRepository`.
+The screen collects `TaskViewModel.uiState`. A single screen-level `LazyColumn` owns vertical scrolling:
 
----
+- Its header item contains the Toast action, Add New Task form, summary cards, Task List heading, and empty-state message.
+- Task cards are keyed lazy items in that same list.
+- There is no nested `LazyColumn`; the form, summary, and task cards can all be reached by scrolling in landscape and portrait.
+- Each card displays a Pending or Completed badge. The completion action is shown only for pending tasks.
 
-## 3. Repository Layer
+### ViewModel — `TaskViewModel.kt`
 
-The repository layer (`TaskRepository.kt`) acts as the single source of truth for task data operations.
+The ViewModel exposes `StateFlow<TaskListUiState>` to Compose and collects the repository task flow. It validates blank or whitespace-only titles, maintains form input and error state, delegates add and completion actions, and computes summary counts.
 
-### Responsibilities
-- Managing in-memory task data using a `MutableStateFlow<List<Task>>`.
-- Providing data operations: `getTasks()`, `addTask(title, description)`, and `markTaskComplete(taskId)`.
-- Using `MutableStateFlow` to expose reactive updates to the ViewModel.
-- Explicitly allowing duplicate task titles while assigning unique task IDs (`UUID`) to ensure distinct identity and prevent state management key collisions.
-- **Singleton Rule:** No Singleton pattern is introduced for `TaskRepository` because ViewModel scoping provides sufficient lifecycle retention for in-memory data during configuration changes.
+### Repository — `TaskRepository.kt`
 
----
+The repository observes `TaskDao.observeTasks()` and maps `TaskEntity` values to the `Task` model. Adding a task trims title and description, creates a UUID, and stores it with pending status. Completion is delegated to the DAO.
 
-## 4. Data Flow
+### Local data — `TaskDatabase`, `TaskDao`, and `TaskEntity`
 
-### Task Addition Flow
-1. User enters a required task title and optional task description in the input fields.
-2. User taps the **"Add Task"** button.
-3. The UI delegates the action event to `TaskViewModel`.
-4. `TaskViewModel` validates the title input (checking for blank or whitespace-only strings using `.trim()`).
-5. **Invalid Input:** Produces inline validation error feedback (`errorMessage = "Task title cannot be empty"`) and blocks task creation.
-6. **Valid Input:** Passes the sanitized title and description to `TaskRepository`.
-7. `TaskRepository` creates a new `Task` object with a unique UUID and updates the in-memory task list.
-8. The updated task list flows through `MutableStateFlow` to `TaskViewModel` and is exposed via `StateFlow` in `TaskListUiState`.
-9. The UI observes the new state and renders the updated task list along with an empty input state and cleared error message.
+- `TaskDatabase` is a Room database with a singleton instance and database name `employee_tasks.db`.
+- `TaskEntity` maps to the `tasks` table and uses the task ID as its primary key.
+- `TaskDao.observeTasks()` returns a Room `Flow<List<TaskEntity>>`.
+- `insertTask` uses `OnConflictStrategy.REPLACE`.
+- Completion uses `UPDATE tasks SET isCompleted = 1 WHERE id = :taskId AND isCompleted = 0`.
 
-### Task Completion Flow
-1. User taps the **"Complete"** action button on a pending task item.
-2. The UI delegates the completion event with the `taskId` to `TaskViewModel`.
-3. `TaskViewModel` calls `TaskRepository.markTaskComplete(taskId)`.
-4. `TaskRepository` locates the task by its unique ID, sets `isCompleted = true` (one-way), and emits the updated task list.
-5. The UI observes the state change and updates the task's visual status badge to "Completed".
+The task model supplies UUID IDs and defaults new tasks to incomplete.
 
----
+## Data flows
 
-## 5. Task Completion Rules
+### Add task
 
-Task completion is governed by strict business rules:
-- **One-Way Progression:** Task completion is strictly **one-way**: Pending $\rightarrow$ Completed (`isCompleted = true`).
-- **No Reversion:** Completed tasks cannot be toggled back to Pending.
-- **Idempotency:** Repeated completion requests on an already completed task are handled idempotently. A completed task remains successfully completed when the action is triggered again, without corrupting state or triggering errors.
+1. Compose input changes update the ViewModel state.
+2. The ViewModel rejects an empty or whitespace-only title with the inline validation message.
+3. For valid input, the ViewModel calls the repository.
+4. The repository trims title and description, creates a pending task with a unique ID, and inserts its entity through the DAO.
+5. Room emits the updated task list; the repository maps it to models, the ViewModel updates UI state, and Compose renders the new task and summary counts.
 
----
+### Complete task
 
-## 6. UI Components (`TaskListScreen.kt`)
+1. The card action sends the task ID to the ViewModel.
+2. The repository calls the DAO's one-way update query.
+3. Room emits the updated record and the UI displays the Completed badge.
+4. The action is hidden for completed tasks. The DAO update condition makes repeat completion requests leave the completed state unchanged.
 
-The planned `TaskListScreen` interface includes:
-- **Required Task Title Input Field:** An `OutlinedTextField` capturing the task title with multi-line text wrapping support.
-- **Optional Task Description Input Field:** An `OutlinedTextField` configured for multi-line input.
-- **Add Task Button:** Triggers validation and task insertion.
-- **Inline Validation Message:** Displays `"Task title cannot be empty"` when submission fails validation.
-- **Scrollable Task List:** A `LazyColumn` displaying task cards.
-- **Task Status Indicators:** Material 3 color badges distinguishing Pending versus Completed tasks.
-- **Task Completion Action:** Button/action to mark tasks as completed.
-- **Empty Task List Message:** Placeholder text (*"No tasks available. Add a new task to get started!"*) when zero tasks exist.
-- **Text Wrapping:** Full multi-line support for long titles and descriptions within cards.
-- **Day 2 Toast Action:** An accessible button or header triggering the existing Day 2 Toast handler (`showTaskDetailToast(context)`).
+## Persistence and lifecycle
 
----
+Room stores task records in the app database, so task data is designed to survive Activity recreation and process restart. The current instrumented test verifies that records and completion status survive closing and reopening a Room database. That test uses a unique temporary database name; end-to-end app behavior after process restart has **not** been tested.
 
-## 7. State Management and Lifecycle
+The Activity-scoped ViewModel also retains form/UI state across configuration changes, but unsubmitted input retention has not been manually verified.
 
-- **`TaskListUiState`:** A data class representing the immutable UI state snapshot exposed by the ViewModel (`tasks`, `titleInput`, `descriptionInput`, `errorMessage`).
-- **`StateFlow`:** Used to stream reactive UI state updates efficiently from the ViewModel to Compose.
-- **Configuration Change Retention:** ViewModels survive configuration changes (such as device rotation). Consequently, `TaskRepository` scoped within the ViewModel retains in-memory task data across rotations without requiring Singleton complexity or external database injection.
-- **Process Destruction Limitation:** Because storage is strictly in-memory, **process destruction** by the OS (reclaiming memory while backgrounded) results in task data loss. 
-- **Future Persistence:** Room database integration is designated as a future architectural enhancement.
+## Verification recorded
 
----
+- **Build:** `app:assembleDebug` succeeded after the landscape scrolling change.
+- **Unit tests:** Forced `app:testDebugUnitTest --rerun-tasks` completed successfully; 13 tests passed.
+- **Instrumented test:** `app:connectedDebugAndroidTest` completed successfully on the connected emulator. Its single test checks Room task and completion persistence after database reopen.
+- **Emulator scrolling:** After deploying the updated build, a landscape swipe exposed the summary and task cards; further scrolling advanced through cards. The updated portrait hierarchy also exposed a scrollable screen.
+- Empty-state UI, long-title wrapping, and end-to-end app process restart remain unverified.
 
-## 8. Proposed Package Structure & Integration
+## Day 3 planning traceability
 
-```text
-app/src/main/java/com/example/employeetaskmanager/
-│
-├── data/
-│   ├── model/
-│   │   └── Task.kt                  <-- Task data class & status enum
-│   └── repository/
-│       └── TaskRepository.kt        <-- In-memory data source & operations
-│
-└── ui/
-    ├── viewmodel/
-    │   └── TaskViewModel.kt         <-- State management & UI events
-    └── screens/
-        └── TaskListScreen.kt        <-- Jetpack Compose UI screen
-```
-
-### `MainActivity.kt` Integration
-`MainActivity.kt` will undergo a targeted update to its `setContent` block to render `TaskListScreen` within `EmployeeTaskManagerTheme`. All existing Day 1 lifecycle overrides (`onCreate`, `onStart`, `onResume`, `onPause`, `onStop`), Logcat debugging logs under tag `"EmployeeApp"`, and Day 2 Toast handlers (`onTaskDetailButtonClicked`, `showTaskDetailToast`) will be strictly preserved and remain fully operational.
-
----
-
-## 9. Testing Considerations
-
-The planned testing strategy includes:
-1. **Task Creation Tests:** Verifying default field initialization and unique UUID generation.
-2. **Valid Task Addition Tests:** Confirming successful addition and input resetting.
-3. **Optional Description Tests:** Ensuring tasks with and without descriptions are handled correctly.
-4. **Blank-Title Validation Tests:** Verifying that blank or whitespace-only inputs trigger inline error messages (`"Task title cannot be empty"`) and block creation.
-5. **Duplicate Title & Unique ID Tests:** Confirming duplicate titles are permitted while maintaining distinct IDs.
-6. **One-Way & Idempotent Completion Tests:** Verifying Pending $\rightarrow$ Completed progression and idempotent re-clicks.
-7. **Rotation & ViewModel State Retention Tests:** Verifying task list persistence across screen rotation.
-8. **Process Destruction Limitation:** Acknowledging in-memory data loss on process death.
-9. **Day 1 Lifecycle Logcat Regression Tests:** Verifying `"EmployeeApp"` Logcat outputs during activity transitions.
-10. **Day 2 Toast Regression Tests:** Verifying `showTaskDetailToast` execution when triggered from the UI.
-
----
-
-## 10. Architecture Decisions and Constraints
-
-### Justification
-MVVM and the Repository layer are chosen to establish professional separation of concerns, robust testability, and clean state management, while remaining lightweight and beginner-friendly.
-
-### Constraints
-- Reuse existing Android and Jetpack Compose dependencies (Compose BOM `2026.02.01`).
-- Do not add unnecessary external libraries.
-- Do not introduce complex dependency injection frameworks.
-- Do not implement database persistence in this phase.
-- Preserve existing Day 1 and Day 2 functionality.
-
----
-
-## 11. Documentation & Implementation Status
-
-- **Architecture Documentation Status:** COMPLETED
-- **Coding Status:** COMPLETED (Day 4 Feature Implementation & 13 Unit Tests Passed)
-- **Trainer Approval:** PENDING
+The Day 3 plan records an in-memory repository as the proposed initial design. This file documents the Room-backed implementation that is currently in source; it does not claim that the Day 3 in-memory proposal was implemented. Treat the Day 3 plan as planning history and this document as the as-built architecture.

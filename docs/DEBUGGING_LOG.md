@@ -1,32 +1,38 @@
 # Debugging and Verification Log
 
-## Latest Final Codex Review — 2026-11-18
+## Latest verification after the landscape scrolling fix — 2026-11-18
 
-This review entry records checks performed on 2026-11-18. The Day 4 notes dated 2026-11-17 below are historical records of the implementation and checks at that time; they do not replace or establish the latest results.
+### Build and automated tests
 
-### Build and unit tests
+- **PASS:** `.\gradlew.bat app:assembleDebug` completed successfully after the scrolling change.
+- **PASS:** `.\gradlew.bat app:testDebugUnitTest --rerun-tasks` completed with exit code 0 and `BUILD SUCCESSFUL`; Gradle reported 13 tests completed (5 repository, 7 ViewModel, 1 example).
+- **PASS:** `.\gradlew.bat app:connectedDebugAndroidTest` completed with exit code 0 and `BUILD SUCCESSFUL` on the connected emulator.
+- The instrumented suite contains one test, `tasksAndCompletionStatusSurviveDatabaseReopen`. It inserts pending and completed rows, completes a row, closes and reopens the same uniquely named Room database, then verifies the rows and completion state.
+- **NOT TESTED:** End-to-end application behavior after killing and relaunching the app. The instrumented test reopens a test database; it does not kill or relaunch the app or exercise the production `employee_tasks.db` singleton path.
 
-- **PASS:** Ran `.\\gradlew.bat app:assembleDebug app:testDebugUnitTest`; Gradle completed with exit code 0 and reported `BUILD SUCCESSFUL`.
-- **PASS:** Forced a fresh unit-test execution with `.\\gradlew.bat app:testDebugUnitTest --rerun-tasks`. The command completed with exit code 0 and reported `BUILD SUCCESSFUL` (27 Gradle tasks executed).
-- The source contains 13 unit-test methods: 5 in `TaskRepositoryTest`, 7 in `TaskViewModelTest`, and 1 in `ExampleUnitTest`. The forced unit-test task completed successfully. Instrumented tests, including `TaskDatabasePersistenceTest`, were not run.
+### Landscape scrolling and orientation checks
 
-### Emulator checks
+- **PASS:** Deployed the updated app to the emulator. In landscape, the screen's single scrollable container included the Toast action, form, summary, and task cards. A vertical swipe revealed the summary and list; a further swipe advanced through task cards.
+- **PASS:** The updated portrait screen also exposed the same screen-level scrollable container and task content.
+- The implementation keeps the form and summary in the header item of the screen-level `LazyColumn`; task cards remain keyed lazy items in that list. No nested lazy list is used.
 
-- **PASS:** Added “Codex Review Check 2026”; the task appeared and the title field cleared.
-- **PASS:** Submitted a blank title; “Task title cannot be empty” appeared and the task count remained unchanged.
-- **PASS:** Marked the review task complete; its badge changed to “Completed” and its completion button disappeared.
-- **PASS:** Rotated to landscape and back to portrait. The task and Completed status remained after rotation.
-- **PASS:** Tapped “Task Detail Button Click”. Logcat recorded `onTaskDetailButtonClicked` and `showTaskDetailToast`.
-- **NOT TESTED:** The brief Toast overlay was not captured onscreen; handler invocation was confirmed in Logcat.
-- **PASS:** Logcat showed `EmployeeApp` lifecycle messages during launch and rotation, including start/resume and pause/stop.
-- **FAIL:** In landscape, the form occupies the available screen and the summary and task list are not visible.
-- **NOT TESTED:** Empty-list behavior, long-title wrapping, whitespace-only input through emulator interaction, rapid repeated taps, and process-death behavior. No instrumented test task was run.
+### Other recorded emulator checks
 
-### Unresolved architecture and documentation discrepancy
+- **PASS (previous same-day emulator check):** A valid task was added and the title field cleared; blank-title submission displayed `Task title cannot be empty` without increasing the task count.
+- **PASS (previous same-day emulator check):** Marking a pending task complete changed its badge to Completed and removed its completion action.
+- **PASS (previous same-day emulator check):** Task and completion state remained after rotating landscape and back to portrait.
+- **PASS:** Tapping the Day 2 action logged `onTaskDetailButtonClicked` and `showTaskDetailToast`; lifecycle logs under `EmployeeApp` were visible during launch and rotation.
+- **NOT TESTED:** The transient Toast overlay itself was not captured onscreen.
 
-The approved Day 3 plan and architecture documents specify an in-memory repository-owned `MutableStateFlow<List<Task>>`. The current implementation constructs a Room-backed repository using `TaskDatabase` and `TaskDao`. This mismatch is unresolved. The Room implementation is not being re-described as the approved Day 3 architecture, and no architecture change was made as part of this review.
+### Current architecture and traceability
 
-The full final review is recorded in `docs/CODEX_REVIEW.md`. No app source code was changed and no commit or push was made for the review.
+The current application source uses Room via `TaskDatabase`, `TaskDao`, and `TaskRepository`. `docs/ARCHITECTURE.md` now describes this as-built implementation. Day 3 planning documents retain the earlier in-memory proposal as planning history; they should not be read as a description of the current storage implementation.
+
+- **PASS:** Room database close/reopen persistence and restoration of a completed status, as covered by the instrumented test.
+- **PASS:** One-way completion and repeated completion through the unit-tested fake DAO. The Room test verifies a completion update and restored Completed state.
+- **NOT TESTED:** Repeated completion against the real Room DAO, empty-state UI, long-title wrapping, and end-to-end app process restart.
+
+No application source, Gradle file, or test was changed for this documentation update. No commit or push was made.
 
 ---
 
