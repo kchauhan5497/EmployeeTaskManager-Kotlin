@@ -1,27 +1,42 @@
 # Current Project Status
 
-**Last audited:** 2026-11-17  
-**Phase:** Day 3 planning, “Thursday – Plan before coding”
+**Last Updated:** 2026-11-18
+**Phase:** Day 4 — Feature implementation and verification
+**Branch:** `feature/task-list`
 
-## Completed
-- Day 3 requirements, user stories, edge cases, and acceptance criteria are documented in `REQUIREMENTS.md`.
-- Proposed architecture, file responsibilities, ordered steps, step dependencies, testing strategy, risks, assumptions, and Codex review revisions are documented in `DEVELOPMENT_PLAN.md`.
-- Architecture responsibilities and data flow are documented in `ARCHITECTURE.md` and `diagrams/architecture.mmd`.
-- Documentation consistency audit and corrections were performed on 2026-11-17.
+## Daily completion overview
 
-## Next
-- Submit the four Day 3 items (`REQUIREMENTS.md`, `DEVELOPMENT_PLAN.md`, `ARCHITECTURE.md`, and `diagrams/architecture.mmd`) for trainer review.
-- Begin implementation only after the planning/review process authorizes it.
+- [x] **Day 1: Project setup and environment configuration** — historical completion recorded.
+  - Android Studio project initialization, Gradle Kotlin DSL configuration, baseline single-Activity project, and Git setup.
+- [x] **Day 2: Activity lifecycle, logging, and button event flow** — historical completion recorded.
+  - Lifecycle callbacks and `EmployeeApp` logging in `MainActivity.kt`; Day 2 Toast handler; walkthrough documentation.
+- [x] **Day 3: Plan before coding** — planning documentation completed.
+  - Requirements, development plan, and architecture planning documents were created. The Day 3 plan describes an in-memory proposal; it is planning history, not the current storage implementation.
+- [ ] **Day 4: Feature implementation and final review** — feature code is present; final submission review remains incomplete.
+  - Task model, Room-backed repository, ViewModel, Compose task screen, and Activity integration are present.
+  - Day 1 lifecycle logging and Day 2 Toast action remain present.
+  - Current as-built architecture is Room-backed; see `docs/ARCHITECTURE.md`.
 
-## Blocked / pending
-- Trainer approval is pending.
-- No other implementation blocker is recorded.
+## Current implementation
 
-## Status
-- **Coding Status:** NOT STARTED
-- **Trainer Approval:** PENDING
+- Tasks are persisted by Room in `employee_tasks.db`.
+- The repository observes Room data through a DAO `Flow`; task completion is one-way.
+- `TaskListScreen` uses one screen-level `LazyColumn` for its header content and keyed task-card items. The Toast action, add form, summary, and list are reachable by vertical scrolling.
+- Completed tasks display a Completed badge and no completion action.
 
-## Verification results
-- Documentation files and references were inspected; documented architecture and status consistency were reviewed.
-- Mermaid source was inspected for a valid declaration, node/edge structure, and absence of Markdown fences. Automated Mermaid parsing was not performed because Mermaid CLI was unavailable.
-- No Day 3 application build, unit tests, or UI tests were run. No such results are claimed here.
+## Latest verification
+
+- **PASS — Debug build:** `app:assembleDebug` succeeded after the landscape scrolling change.
+- **PASS — Unit tests:** `app:testDebugUnitTest --rerun-tasks` completed successfully; 13 tests passed (5 repository, 7 ViewModel, 1 example).
+- **PASS — Instrumented test:** `app:connectedDebugAndroidTest` completed successfully on the connected emulator. The single `TaskDatabasePersistenceTest` verifies task records and completion status survive closing and reopening a Room database.
+- **PASS — Landscape scrolling:** On the deployed updated build, a vertical swipe revealed the summary and task cards; a further swipe advanced through task cards.
+- **PASS — Portrait scrolling:** The updated screen hierarchy exposed one scrollable screen containing the task content.
+- **PASS — Completion coverage:** The repository unit test covers repeated completion via a fake DAO; the instrumented test covers a Room completion update and restored Completed status.
+- **NOT TESTED:** End-to-end app behavior after process restart; the Room test reopens a test database rather than killing and relaunching the app. Empty-state UI and long-title wrapping were not reverified.
+
+## Documentation and remaining work
+
+- `docs/ARCHITECTURE.md` describes the current Room-backed implementation. `docs/DEVELOPMENT_PLAN.md` retains the Day 3 in-memory proposal as planning history.
+- Trainer approval remains pending.
+- End-to-end process restart, empty-state UI, and long-title wrapping remain unverified.
+- No commit or push has been made for these verification results. See `docs/DEBUGGING_LOG.md` for the detailed record.
